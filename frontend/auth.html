@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CampusKrafts - Auth Portal</title>
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+
+  <!-- Navigation -->
+  <header class="container">
+    <nav class="landing-nav">
+      <div class="logo"><a href="/">⚡ CampusKrafts</a></div>
+      <a href="/" class="btn btn-secondary btn-sm">← Back to Home</a>
+    </nav>
+  </header>
+
+  <!-- Auth Center Card -->
+  <div class="auth-container">
+    <div class="card auth-card">
+      
+      <!-- Normal Login/Signup Screen -->
+      <div id="auth-main-panel">
+        <div class="auth-tabs">
+          <button class="auth-tab active" id="tab-login" onclick="switchAuthTab('login')">Log In</button>
+          <button class="auth-tab" id="tab-signup" onclick="switchAuthTab('signup')">Sign Up</button>
+        </div>
+
+        <!-- Login Form -->
+        <form id="form-login" onsubmit="handleLoginSubmit(event)">
+          <div class="form-group">
+            <label class="form-label">Email Address</label>
+            <input type="email" class="form-control" id="login-email" required placeholder="student@campuskrafts.com">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Password</label>
+            <input type="password" class="form-control" id="login-password" required placeholder="••••••••">
+          </div>
+          <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 10px;">Access Dashboard</button>
+        </form>
+
+        <!-- Signup Form -->
+        <form id="form-signup" onsubmit="handleSignupSubmit(event)" style="display: none;">
+          <div class="form-group">
+            <label class="form-label">Full Name</label>
+            <input type="text" class="form-control" id="signup-name" required placeholder="John Doe">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Email Address</label>
+            <input type="email" class="form-control" id="signup-email" required placeholder="your.name@example.com">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Password</label>
+            <input type="password" class="form-control" id="signup-password" required placeholder="Create password (min 6 chars)">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Account Role</label>
+            <select class="form-control" id="signup-role">
+              <option value="student">Student (Prep Applicant)</option>
+              <option value="instructor">Instructor (Teacher / Grader)</option>
+              <option value="admin">Administrator (System Manager)</option>
+            </select>
+          </div>
+          <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 10px;">Send Verification OTP</button>
+        </form>
+      </div>
+
+      <!-- OTP Verification Screen -->
+      <div id="auth-otp-panel" style="display: none;">
+        <h3 style="text-align: center; margin-bottom: 8px;">Verify Your Email</h3>
+        <p style="text-align: center; font-size: 0.875rem; color: var(--text-secondary); margin-bottom: 24px;">
+          An OTP code was sent to <strong id="otp-target-email"></strong>. 
+          <br><span style="color: var(--warning); font-size: 0.825rem;">(Check the backend terminal console for the generated code if SMTP is unconfigured)</span>
+        </p>
+
+        <form id="form-otp" onsubmit="handleOtpSubmit(event)">
+          <div class="form-group">
+            <label class="form-label" style="text-align: center;">Enter 6-Digit Code</label>
+            <div class="otp-box">
+              <input type="text" class="otp-input" maxlength="1" required onkeyup="otpInputNavigate(this, event)">
+              <input type="text" class="otp-input" maxlength="1" required onkeyup="otpInputNavigate(this, event)">
+              <input type="text" class="otp-input" maxlength="1" required onkeyup="otpInputNavigate(this, event)">
+              <input type="text" class="otp-input" maxlength="1" required onkeyup="otpInputNavigate(this, event)">
+              <input type="text" class="otp-input" maxlength="1" required onkeyup="otpInputNavigate(this, event)">
+              <input type="text" class="otp-input" maxlength="1" required onkeyup="otpInputNavigate(this, event)">
+            </div>
+          </div>
+          <button type="submit" class="btn btn-accent" style="width: 100%; margin-top: 20px;">Verify & Log In</button>
+          <p style="text-align: center; margin-top: 16px; font-size: 0.85rem;">
+            <a href="#" onclick="cancelOtpFlow()" style="color: var(--text-muted); text-decoration: underline;">Cancel and return</a>
+          </p>
+        </form>
+      </div>
+
+      <div class="auth-footer" id="auth-footer-text">
+        <p>By logging in, you agree to CampusKrafts guidelines.</p>
+      </div>
+
+    </div>
+  </div>
+
+  <footer style="margin-top: auto; padding: 24px 0; text-align: center; color: var(--text-muted); font-size: 0.85rem;">
+    <p>&copy; 2026 CampusKrafts &bull; BRAC University Admissions Focus</p>
+  </footer>
+
+  <!-- Scripts -->
+  <script src="/js/api.js"></script>
+  <script src="/js/auth.js"></script>
+</body>
+</html>

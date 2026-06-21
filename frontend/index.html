@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CampusKrafts - BRAC University Admission Preparation Portal</title>
+  <meta name="description" content="CampusKrafts is the ultimate prep portal for BRAC University Admissions. Free mock tests, dynamic course materials, bKash payments, and online/live coaching.">
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+
+  <!-- Landing Navigation -->
+  <header class="container">
+    <nav class="landing-nav">
+      <div class="logo">
+        <span style="color: var(--primary);">⚡</span> CampusKrafts
+      </div>
+      <div class="nav-links">
+        <a href="#about" class="nav-link">About</a>
+        <a href="#courses" class="nav-link">Courses</a>
+        <a href="#tests" class="nav-link">Free Tests</a>
+        <a href="#faq" class="nav-link">FAQs</a>
+        <a href="#updates" class="nav-link">Admission Updates</a>
+        <a href="/auth.html" id="nav-auth-btn" class="btn btn-primary btn-sm">Sign In / Sign Up</a>
+      </div>
+    </nav>
+  </header>
+
+  <!-- Hero Section -->
+  <section class="container hero-section">
+    <div class="hero-badge">BRAC University Admission 2026 Focus</div>
+    <h1 class="hero-title" id="hero-title">Shape Your Future at BRAC University</h1>
+    <p class="hero-subtitle" id="hero-subtitle">
+      CampusKrafts is the premier admission prep portal designed exclusively for BRACU applicants. Access free mock tests, interactive online/live coaching batches, and study resource banks curated by specialists.
+    </p>
+    <div class="hero-actions">
+      <a href="/auth.html" class="btn btn-primary">Get Started Free</a>
+      <a href="#courses" class="btn btn-secondary">Explore Courses</a>
+    </div>
+  </section>
+
+  <!-- Quick Stats -->
+  <section class="container">
+    <div class="quick-stats card">
+      <div class="stat-item">
+        <div class="stat-val">6</div>
+        <div class="stat-lbl">Exam Sections Prepared</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-val">5</div>
+        <div class="stat-lbl">Target Course Tracks</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-val">100%</div>
+        <div class="stat-lbl">bKash Fast Enrollments</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-val">4</div>
+        <div class="stat-lbl">Free Entrance Mock Tests</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- About Section detailing Exam structure -->
+  <section id="about" class="container" style="padding: 60px 0;">
+    <h2 class="section-title">BRACU Admission Structure</h2>
+    <p class="section-subtitle">The BRAC University admission exam is divided into 6 distinct sections. Our courses map perfectly to these requirements based on your desired major.</p>
+    
+    <div class="courses-grid">
+      <div class="card">
+        <h3 style="color: var(--secondary); margin-bottom: 12px;">Exam Sections</h3>
+        <ul style="list-style: none; display: flex; flex-direction: column; gap: 8px;">
+          <li><strong>Section A:</strong> English Language (General Grammar & Reading)</li>
+          <li><strong>Section B:</strong> English Composition (Essay & Writing skills)</li>
+          <li><strong>Section C:</strong> Mathematics (General Arithmetic & Algebra)</li>
+          <li><strong>Section D:</strong> Higher Mathematics & Physics (For STEM/CSE majors)</li>
+          <li><strong>Section E:</strong> Biology & Chemistry (For Pharmacy/Biosciences)</li>
+          <li><strong>Section F:</strong> Drawing (For Architecture majors)</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h3 style="color: var(--primary); margin-bottom: 12px;">Platform Deliverables</h3>
+        <ul style="list-style: none; display: flex; flex-direction: column; gap: 8px;">
+          <li>✅ Interactive mock exams with timers and automated scoring</li>
+          <li>✅ Live class streams and archived lecture videos</li>
+          <li>✅ Weak-topic identification & personalized study suggestor</li>
+          <li>✅ Discussion forum, direct Q&A messaging to teachers</li>
+          <li>✅ Online (Self-Paced) vs Live (Direct consultation) batch options</li>
+          <li>✅ Full-length admission model tests and worksheets</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- Target Courses Tracks Section -->
+  <section id="courses" class="container" style="padding: 60px 0;">
+    <h2 class="section-title">Course Enrollment Tracks</h2>
+    <p class="section-subtitle">Choose the course track that matches your target department. Selecting a track unlocks targeted mock tests, worksheets, and online/live batches.</p>
+    
+    <div class="courses-grid" id="landing-courses-list">
+      <!-- Courses will be loaded dynamically from DB. Loading states placeholder: -->
+      <div class="card">Loading courses...</div>
+    </div>
+  </section>
+
+  <!-- Free Tests Section -->
+  <section id="tests" class="tests-section">
+    <div class="container">
+      <h2 class="section-title">Free Mock Assessments</h2>
+      <p class="section-subtitle">Everyone who registers gets 1 free mock test for each of the core subject streams below. Upgrade to a premium course to unlock full-length tests.</p>
+      
+      <div class="tests-grid" id="landing-free-tests-list">
+        <div class="test-card">
+          <h4>English Language</h4>
+          <p style="font-size: 0.875rem; color: var(--text-secondary); margin: 8px 0 16px 0;">Grammar, vocabulary, sentence correction, and comprehension.</p>
+          <a href="/auth.html" class="btn btn-secondary btn-sm" style="width: 100%;">Start Test</a>
+        </div>
+        <div class="test-card">
+          <h4>General Mathematics</h4>
+          <p style="font-size: 0.875rem; color: var(--text-secondary); margin: 8px 0 16px 0;">Algebra, arithmetic, geometry, and basic trigonometry.</p>
+          <a href="/auth.html" class="btn btn-secondary btn-sm" style="width: 100%;">Start Test</a>
+        </div>
+        <div class="test-card">
+          <h4>Higher Math & Physics</h4>
+          <p style="font-size: 0.875rem; color: var(--text-secondary); margin: 8px 0 16px 0;">Calculus, mechanics, electricity, thermodynamics, and vectors.</p>
+          <a href="/auth.html" class="btn btn-secondary btn-sm" style="width: 100%;">Start Test</a>
+        </div>
+        <div class="test-card">
+          <h4>Biology & Chemistry</h4>
+          <p style="font-size: 0.875rem; color: var(--text-secondary); margin: 8px 0 16px 0;">Organic chemistry, cell structures, genetics, and acids/bases.</p>
+          <a href="/auth.html" class="btn btn-secondary btn-sm" style="width: 100%;">Start Test</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Admission Updates -->
+  <section id="updates" class="container" style="padding: 80px 0;">
+    <h2 class="section-title">University Admission Updates</h2>
+    <p class="section-subtitle">Stay informed about BRAC University deadlines, registration announcements, and mock dates.</p>
+    
+    <div class="card" style="max-width: 800px; margin: 0 auto;">
+      <ul style="list-style: none; display: flex; flex-direction: column; gap: 16px;" id="landing-updates-list">
+        <!-- Rendered dynamically -->
+        <li>Loading announcements...</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- FAQs Section -->
+  <section id="faq" class="faq-section container">
+    <h2 class="section-title">Frequently Asked Questions</h2>
+    <p class="section-subtitle">Have questions about CampusKrafts or BRAC University admissions? Check the answers below.</p>
+    
+    <div class="faq-list" id="landing-faqs-list">
+      <!-- Rendered dynamically -->
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer style="border-top: 1px solid var(--border-color); padding: 40px 0; text-align: center; color: var(--text-muted); font-size: 0.875rem;">
+    <p>&copy; 2026 CampusKrafts. Dedicated to BRAC University Admission Prep. All rights reserved.</p>
+  </footer>
+
+  <!-- Scripts -->
+  <script src="/js/api.js"></script>
+  <script src="/js/landing.js"></script>
+</body>
+</html>
