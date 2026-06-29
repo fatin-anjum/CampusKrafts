@@ -1,0 +1,926 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// CampusKrafts — PostgreSQL schema (Prisma)
+// Source of truth for the database. Documented in docs/03-DATABASE.md.
+// IDs: cuid()  ·  timestamps: createdAt/updatedAt  ·  soft-delete: deletedAt
+// ─────────────────────────────────────────────────────────────────────────────
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ───────────────────────────── Enums ─────────────────────────────
+
+enum Role {
+  STUDENT
+  TEACHER
+  MODERATOR
+  ADMIN
+}
+
+enum LessonType {
+  LIVE
+  RECORDED
+  SHEET
+}
+
+enum LiveProvider {
+  BUILT_IN
+  ZOOM
+  GOOGLE_MEET
+}
+
+enum LiveStatus {
+  SCHEDULED
+  LIVE
+  ENDED
+  CANCELLED
+}
+
+enum CourseStatus {
+  DRAFT
+  PENDING_REVIEW
+  PUBLISHED
+  ARCHIVED
+}
+
+enum SubStatus {
+  PENDING
+  ACTIVE
+  EXPIRED
+  CANCELLED
+}
+
+enum ExamType {
+  MCQ
+  WRITTEN
+  MIXED
+}
+
+enum ExamMode {
+  PRACTICE
+  GRADED
+  MOCK
+}
+
+enum MockScope {
+  FULL
+  UNIVERSITY
+  WEEKLY
+  MONTHLY_GRAND
+}
+
+enum AttemptStatus {
+  IN_PROGRESS
+  SUBMITTED
+  AUTO_SUBMITTED
+  GRADED
+}
+
+enum QuestionType {
+  MCQ
+  WRITTEN
+}
+
+enum ResourceType {
+  BOOK
+  PDF_NOTE
+  SHORT_NOTE
+  FORMULA_SHEET
+  CHEAT_SHEET
+  GUIDELINE
+}
+
+enum SheetType {
+  LECTURE_SHEET
+  NOTE
+  HANDOUT
+  FORMULA_SHEET
+}
+
+enum ContentStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum SubmissionStatus {
+  SUBMITTED
+  GRADED
+  RETURNED
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+  REFUNDED
+}
+
+enum Gateway {
+  BKASH
+  NAGAD
+  ROCKET
+  SSLCOMMERZ
+  CARD
+}
+
+enum RefundStatus {
+  REQUESTED
+  APPROVED
+  REJECTED
+  PROCESSED
+}
+
+enum TicketStatus {
+  OPEN
+  ASSIGNED
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+enum TicketPriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
+enum NotifChannel {
+  IN_APP
+  PUSH
+  EMAIL
+  SMS
+}
+
+enum OtpPurpose {
+  SIGNUP
+  RESET
+  LOGIN
+}
+
+// ───────────────────────── Identity & Access ─────────────────────────
+
+model User {
+  id           String    @id @default(cuid())
+  name         String
+  email        String?   @unique
+  phone        String?   @unique
+  passwordHash String?
+  role         Role      @default(STUDENT)
+  isVerified   Boolean   @default(false)
+  isBanned     Boolean   @default(false)
+  avatarUrl    String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  deletedAt    DateTime?
+
+  sessions       Session[]
+  oauthAccounts  OAuthAccount[]
+  otpTokens      OtpToken[]
+  auditLogs      AuditLog[]      @relation("ActorAuditLogs")
+  subscriptions  Subscription[]
+  lessonProgress LessonProgress[]
+  attendances    Attendance[]
+  createdCourses Course[]        @relation("CourseCreator")
+  uploadedSheets LectureSheet[]
+  uploadedResources Resource[]
+  createdQuestions Question[]
+  createdExams   Exam[]
+  examAttempts   ExamAttempt[]
+  mockResults    MockResult[]
+  assignments    Assignment[]    @relation("AssignmentCreator")
+  submissions    AssignmentSubmission[] @relation("SubmissionAuthor")
+  gradedSubmissions AssignmentSubmission[] @relation("SubmissionGrader")
+  liveClasses    LiveClass[]     @relation("LiveClassTeacher")
+  threads        ForumThread[]
+  posts          ForumPost[]
+  votes          Vote[]
+  announcements  Announcement[]
+  notifications  Notification[]
+  deviceTokens   DeviceToken[]
+  payments       Payment[]
+  processedRefunds Refund[]      @relation("RefundProcessor")
+  requestedTickets SupportTicket[] @relation("TicketRequester")
+  assignedTickets SupportTicket[] @relation("TicketAssignee")
+  ticketMessages TicketMessage[]
+  questionAttempts QuestionAttempt[]
+  topicMastery   TopicMastery[]
+  revisionItems  RevisionItem[]
+
+  @@index([role])
+  @@index([createdAt])
+  @@map("users")
+}
+
+model Session {
+  id               String    @id @default(cuid())
+  userId           String
+  refreshTokenHash String
+  userAgent        String?
+  ip               String?
+  expiresAt        DateTime
+  revokedAt        DateTime?
+  createdAt        DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("sessions")
+}
+
+model OAuthAccount {
+  id             String @id @default(cuid())
+  userId         String
+  provider       String
+  providerUserId String
+  createdAt      DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerUserId])
+  @@index([userId])
+  @@map("oauth_accounts")
+}
+
+model OtpToken {
+  id         String     @id @default(cuid())
+  userId     String
+  purpose    OtpPurpose
+  codeHash   String
+  expiresAt  DateTime
+  consumedAt DateTime?
+  createdAt  DateTime   @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, purpose])
+  @@map("otp_tokens")
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  actorId   String?
+  action    String
+  entity    String
+  entityId  String?
+  meta      Json?
+  ip        String?
+  createdAt DateTime @default(now())
+
+  actor User? @relation("ActorAuditLogs", fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([entity, entityId])
+  @@index([actorId])
+  @@map("audit_logs")
+}
+
+// ───────────────────────── Catalog & Enrollment ─────────────────────────
+
+model Course {
+  id           String       @id @default(cuid())
+  title        String
+  slug         String       @unique
+  description  String?
+  priceBdt     Int          @default(0)
+  status       CourseStatus @default(DRAFT)
+  thumbnailUrl String?
+  createdById  String
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  createdBy   User           @relation("CourseCreator", fields: [createdById], references: [id])
+  modules     CourseModule[]
+  subscriptions Subscription[]
+  liveClasses LiveClass[]
+  sheets      LectureSheet[]
+  exams       Exam[]
+  assignments Assignment[]
+  threads     ForumThread[]
+  payments    Payment[]
+
+  @@index([status])
+  @@map("courses")
+}
+
+model CourseModule {
+  id       String  @id @default(cuid())
+  courseId String
+  title    String
+  order    Int     @default(0)
+
+  course  Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  lessons Lesson[]
+
+  @@index([courseId, order])
+  @@map("course_modules")
+}
+
+model Lesson {
+  id            String     @id @default(cuid())
+  moduleId      String
+  title         String
+  type          LessonType
+  order         Int        @default(0)
+  videoUrl      String?
+  durationSec   Int?
+  sheetId       String?
+  liveClassId   String?
+  isFreePreview Boolean    @default(false)
+  createdAt     DateTime   @default(now())
+
+  module   CourseModule    @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  progress LessonProgress[]
+
+  @@index([moduleId, order])
+  @@map("lessons")
+}
+
+model Subscription {
+  id        String    @id @default(cuid())
+  userId    String
+  courseId  String
+  status    SubStatus @default(PENDING)
+  startAt   DateTime?
+  endAt     DateTime?
+  paymentId String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course  Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  payment Payment? @relation(fields: [paymentId], references: [id])
+
+  @@unique([userId, courseId])
+  @@index([userId, status])
+  @@map("subscriptions")
+}
+
+model LessonProgress {
+  id              String   @id @default(cuid())
+  userId          String
+  lessonId        String
+  completed       Boolean  @default(false)
+  lastPositionSec Int      @default(0)
+  updatedAt       DateTime @updatedAt
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, lessonId])
+  @@map("lesson_progress")
+}
+
+// ───────────────────────── Live Classes ─────────────────────────
+
+model LiveClass {
+  id           String       @id @default(cuid())
+  courseId     String
+  teacherId    String
+  title        String
+  provider     LiveProvider @default(BUILT_IN)
+  startAt      DateTime
+  endAt        DateTime
+  joinUrl      String?
+  roomName     String?
+  recordingUrl String?
+  status       LiveStatus   @default(SCHEDULED)
+  createdAt    DateTime     @default(now())
+
+  course      Course       @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  teacher     User         @relation("LiveClassTeacher", fields: [teacherId], references: [id])
+  attendances Attendance[]
+
+  @@index([courseId, startAt])
+  @@map("live_classes")
+}
+
+model Attendance {
+  id          String    @id @default(cuid())
+  liveClassId String
+  userId      String
+  joinedAt    DateTime  @default(now())
+  leftAt      DateTime?
+  durationSec Int       @default(0)
+
+  liveClass LiveClass @relation(fields: [liveClassId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([liveClassId, userId])
+  @@map("attendances")
+}
+
+// ───────────────────────── Content ─────────────────────────
+
+model LectureSheet {
+  id         String    @id @default(cuid())
+  courseId   String
+  uploaderId String
+  title      String
+  type       SheetType @default(LECTURE_SHEET)
+  topic      String?
+  chapter    String?
+  s3Key      String
+  sizeBytes  Int       @default(0)
+  downloads  Int       @default(0)
+  createdAt  DateTime  @default(now())
+
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  uploader User   @relation(fields: [uploaderId], references: [id])
+
+  @@index([courseId, topic])
+  @@map("lecture_sheets")
+}
+
+model ResourceCategory {
+  id       String  @id @default(cuid())
+  name     String
+  parentId String?
+
+  parent    ResourceCategory?  @relation("CategoryTree", fields: [parentId], references: [id])
+  children  ResourceCategory[] @relation("CategoryTree")
+  resources Resource[]
+
+  @@map("resource_categories")
+}
+
+model Resource {
+  id         String        @id @default(cuid())
+  categoryId String?
+  uploaderId String
+  title      String
+  description String?
+  type       ResourceType  @default(PDF_NOTE)
+  s3Key      String
+  tags       String[]      @default([])
+  status     ContentStatus @default(PENDING)
+  createdAt  DateTime      @default(now())
+
+  category ResourceCategory? @relation(fields: [categoryId], references: [id])
+  uploader User              @relation(fields: [uploaderId], references: [id])
+
+  @@index([status])
+  @@index([categoryId])
+  @@map("resources")
+}
+
+// ───────────────────────── Assessment ─────────────────────────
+
+model Question {
+  id          String       @id @default(cuid())
+  subject     String
+  topic       String
+  difficulty  Int          @default(3) // 1..5
+  stem        String
+  type        QuestionType @default(MCQ)
+  explanation String?
+  correctText String?      // for WRITTEN model answer
+  createdById String
+  createdAt   DateTime     @default(now())
+
+  createdBy User             @relation(fields: [createdById], references: [id])
+  options   QuestionOption[]
+  examLinks ExamQuestion[]
+  responses AnswerResponse[]
+  attempts  QuestionAttempt[]
+
+  @@index([subject, topic, difficulty])
+  @@map("questions")
+}
+
+model QuestionOption {
+  id         String  @id @default(cuid())
+  questionId String
+  label      String  // A/B/C/D
+  text       String
+  isCorrect  Boolean @default(false)
+
+  question  Question         @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  responses AnswerResponse[]
+
+  @@index([questionId])
+  @@map("question_options")
+}
+
+model Exam {
+  id                String   @id @default(cuid())
+  courseId          String?
+  createdById       String
+  title             String
+  type              ExamType @default(MCQ)
+  mode              ExamMode @default(GRADED)
+  durationSec       Int      @default(3600)
+  negativeMarkRatio Float    @default(0) // e.g. 0.25
+  shuffleQuestions  Boolean  @default(true)
+  shuffleOptions    Boolean  @default(true)
+  secureMode        Boolean  @default(false)
+  opensAt           DateTime?
+  closesAt          DateTime?
+  totalMarks        Int      @default(0)
+  createdAt         DateTime @default(now())
+
+  course    Course?        @relation(fields: [courseId], references: [id])
+  createdBy User           @relation(fields: [createdById], references: [id])
+  questions ExamQuestion[]
+  attempts  ExamAttempt[]
+  mockTest  MockTest?
+
+  @@index([courseId])
+  @@map("exams")
+}
+
+model ExamQuestion {
+  id         String @id @default(cuid())
+  examId     String
+  questionId String
+  marks      Int    @default(1)
+  order      Int    @default(0)
+
+  exam     Exam     @relation(fields: [examId], references: [id], onDelete: Cascade)
+  question Question @relation(fields: [questionId], references: [id])
+
+  @@unique([examId, questionId])
+  @@index([examId, order])
+  @@map("exam_questions")
+}
+
+model ExamAttempt {
+  id                    String        @id @default(cuid())
+  examId                String
+  userId                String
+  status                AttemptStatus @default(IN_PROGRESS)
+  startedAt             DateTime      @default(now())
+  submittedAt           DateTime?
+  remainingSecSnapshot  Int?
+  score                 Float         @default(0)
+  violationsCount       Int           @default(0)
+
+  exam      Exam             @relation(fields: [examId], references: [id], onDelete: Cascade)
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  responses AnswerResponse[]
+  result    ExamResult?
+
+  @@unique([examId, userId])
+  @@index([userId])
+  @@map("exam_attempts")
+}
+
+model AnswerResponse {
+  id               String   @id @default(cuid())
+  attemptId        String
+  questionId       String
+  selectedOptionId String?
+  answerText       String?
+  isCorrect        Boolean?
+  awardedMarks     Float    @default(0)
+  answeredAt       DateTime @default(now())
+
+  attempt        ExamAttempt     @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  question       Question        @relation(fields: [questionId], references: [id])
+  selectedOption QuestionOption? @relation(fields: [selectedOptionId], references: [id])
+
+  @@unique([attemptId, questionId])
+  @@index([attemptId])
+  @@map("answer_responses")
+}
+
+model ExamResult {
+  id          String    @id @default(cuid())
+  attemptId   String    @unique
+  correct     Int       @default(0)
+  wrong       Int       @default(0)
+  skipped     Int       @default(0)
+  score       Float     @default(0)
+  percentile  Float?
+  publishedAt DateTime?
+
+  attempt ExamAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+
+  @@map("exam_results")
+}
+
+// ───────────────────────── Mock & Ranking ─────────────────────────
+
+model MockTest {
+  id          String    @id @default(cuid())
+  examId      String    @unique
+  scope       MockScope @default(WEEKLY)
+  university  String?
+  scheduledAt DateTime
+  closeAt     DateTime
+  createdAt   DateTime  @default(now())
+
+  exam    Exam         @relation(fields: [examId], references: [id], onDelete: Cascade)
+  results MockResult[]
+
+  @@map("mock_tests")
+}
+
+model MockResult {
+  id               String @id @default(cuid())
+  mockTestId       String
+  userId           String
+  score            Float  @default(0)
+  rank             Int?
+  percentile       Float?
+  subjectBreakdown Json?
+  createdAt        DateTime @default(now())
+
+  mockTest MockTest @relation(fields: [mockTestId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([mockTestId, userId])
+  @@index([mockTestId, score])
+  @@map("mock_results")
+}
+
+// ───────────────────────── Assignments ─────────────────────────
+
+model Assignment {
+  id               String   @id @default(cuid())
+  courseId         String
+  createdById      String
+  title            String
+  instructions     String?
+  attachmentS3Key  String?
+  dueAt            DateTime?
+  maxMarks         Int      @default(100)
+  autoGrade        Boolean  @default(false)
+  createdAt        DateTime @default(now())
+
+  course      Course                 @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  createdBy   User                   @relation("AssignmentCreator", fields: [createdById], references: [id])
+  submissions AssignmentSubmission[]
+
+  @@index([courseId])
+  @@map("assignments")
+}
+
+model AssignmentSubmission {
+  id           String           @id @default(cuid())
+  assignmentId String
+  userId       String
+  fileS3Key    String?
+  text         String?
+  submittedAt  DateTime         @default(now())
+  marks        Float?
+  feedback     String?
+  gradedById   String?
+  status       SubmissionStatus @default(SUBMITTED)
+
+  assignment Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  user       User       @relation("SubmissionAuthor", fields: [userId], references: [id], onDelete: Cascade)
+  gradedBy   User?      @relation("SubmissionGrader", fields: [gradedById], references: [id])
+
+  @@unique([assignmentId, userId])
+  @@map("assignment_submissions")
+}
+
+// ───────────────────────── Community ─────────────────────────
+
+model ForumThread {
+  id        String   @id @default(cuid())
+  authorId  String
+  courseId  String?
+  title     String
+  body      String
+  isLocked  Boolean  @default(false)
+  isHidden  Boolean  @default(false)
+  viewCount Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  author User        @relation(fields: [authorId], references: [id])
+  course Course?     @relation(fields: [courseId], references: [id])
+  posts  ForumPost[]
+
+  @@index([courseId])
+  @@index([createdAt])
+  @@map("forum_threads")
+}
+
+model ForumPost {
+  id        String   @id @default(cuid())
+  threadId  String
+  authorId  String
+  parentId  String?
+  body      String
+  isAnswer  Boolean  @default(false)
+  isHidden  Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  thread   ForumThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  author   User        @relation(fields: [authorId], references: [id])
+  parent   ForumPost?  @relation("PostReplies", fields: [parentId], references: [id])
+  replies  ForumPost[] @relation("PostReplies")
+  votes    Vote[]
+
+  @@index([threadId])
+  @@map("forum_posts")
+}
+
+model Vote {
+  id     String @id @default(cuid())
+  userId String
+  postId String
+  value  Int    // +1 / -1
+
+  user User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post ForumPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, postId])
+  @@map("votes")
+}
+
+// ───────────────────────── Comms ─────────────────────────
+
+model Announcement {
+  id          String    @id @default(cuid())
+  authorId    String
+  title       String
+  body        String
+  audience    Json?     // { roles: [...], courseId, all: true }
+  publishedAt DateTime  @default(now())
+
+  author User @relation(fields: [authorId], references: [id])
+
+  @@index([publishedAt])
+  @@map("announcements")
+}
+
+model Notification {
+  id        String    @id @default(cuid())
+  userId    String
+  type      String
+  title     String
+  body      String?
+  data      Json?
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, readAt])
+  @@map("notifications")
+}
+
+model DeviceToken {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  platform  String   // android | ios | web
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("device_tokens")
+}
+
+// ───────────────────────── Commerce ─────────────────────────
+
+model Payment {
+  id             String        @id @default(cuid())
+  userId         String
+  courseId       String
+  gateway        Gateway
+  amountBdt      Int
+  status         PaymentStatus @default(PENDING)
+  gatewayRef     String?
+  idempotencyKey String        @unique
+  rawPayload     Json?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  user          User           @relation(fields: [userId], references: [id])
+  course        Course         @relation(fields: [courseId], references: [id])
+  refunds       Refund[]
+  subscriptions Subscription[]
+
+  @@index([status, createdAt])
+  @@index([userId])
+  @@map("payments")
+}
+
+model Refund {
+  id            String       @id @default(cuid())
+  paymentId     String
+  amountBdt     Int
+  reason        String?
+  status        RefundStatus @default(REQUESTED)
+  processedById String?
+  createdAt     DateTime     @default(now())
+
+  payment     Payment @relation(fields: [paymentId], references: [id])
+  processedBy User?   @relation("RefundProcessor", fields: [processedById], references: [id])
+
+  @@index([paymentId])
+  @@map("refunds")
+}
+
+// ───────────────────────── Support ─────────────────────────
+
+model SupportTicket {
+  id          String         @id @default(cuid())
+  requesterId String
+  category    String
+  subject     String
+  status      TicketStatus   @default(OPEN)
+  priority    TicketPriority @default(NORMAL)
+  assigneeId  String?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  requester User            @relation("TicketRequester", fields: [requesterId], references: [id])
+  assignee  User?           @relation("TicketAssignee", fields: [assigneeId], references: [id])
+  messages  TicketMessage[]
+
+  @@index([status])
+  @@index([assigneeId])
+  @@map("support_tickets")
+}
+
+model TicketMessage {
+  id              String   @id @default(cuid())
+  ticketId        String
+  senderId        String
+  body            String
+  attachmentS3Key String?
+  createdAt       DateTime @default(now())
+
+  ticket SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  sender User          @relation(fields: [senderId], references: [id])
+
+  @@index([ticketId])
+  @@map("ticket_messages")
+}
+
+// ───────────────────────── Adaptive ─────────────────────────
+
+model QuestionAttempt {
+  id         String   @id @default(cuid())
+  userId     String
+  questionId String
+  isCorrect  Boolean
+  timeMs     Int      @default(0)
+  difficulty Int      @default(3)
+  source     String   @default("PRACTICE") // PRACTICE | EXAM | MOCK
+  createdAt  DateTime @default(now())
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  question Question @relation(fields: [questionId], references: [id])
+
+  @@index([userId, createdAt])
+  @@map("question_attempts")
+}
+
+model TopicMastery {
+  id         String   @id @default(cuid())
+  userId     String
+  subject    String
+  topic      String
+  mastery    Float    @default(0) // 0..1 (EWMA)
+  attempts   Int      @default(0)
+  lastSeenAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, subject, topic])
+  @@index([userId])
+  @@map("topic_mastery")
+}
+
+model RevisionItem {
+  id          String   @id @default(cuid())
+  userId      String
+  topic       String
+  dueAt       DateTime
+  intervalDays Int     @default(1)
+  easeFactor  Float    @default(2.5)
+  createdAt   DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, dueAt])
+  @@map("revision_items")
+}
+
+// ───────────────────────── CMS / Site Settings ─────────────────────────
+
+/**
+ * Generic key/value store for admin-editable site content (e.g. the landing
+ * page). One row per logical document; `value` holds arbitrary JSON.
+ */
+model SiteSetting {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     Json
+  updatedAt DateTime @updatedAt
+
+  @@map("site_settings")
+}
